@@ -221,5 +221,5 @@ export const TEAM_COLORS: Record<string, string> = {
   ury: '#3B82F6',
   hai: '#1D4ED8',
   sco: '#1E3A8A',
-  mar: '#15803D',
+  mar: '#CC1326',
 };

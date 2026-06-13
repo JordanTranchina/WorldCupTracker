@@ -15,6 +15,8 @@ interface PolymarketEvent {
   id: string;
   slug: string;
   title: string;
+  volume?: number;
+  volumeNum?: number;
   markets: PolymarketMarket[];
 }
 
@@ -73,12 +75,14 @@ export async function GET(
     let homeRaw = 0;
     let awayRaw = 0;
     let drawRaw = 0;
-    let totalVolume = 0;
+    // Event-level volume is most reliable; fall back to summing market volumes
+    const eventVolume = event.volume || event.volumeNum || 0;
+    let marketVolumeSum = 0;
 
     for (const market of markets) {
       const q = market.question.toLowerCase();
       const price = parseYesPrice(market);
-      totalVolume += market.volume || 0;
+      marketVolumeSum += (market.volume || 0);
 
       if (q.includes('draw')) {
         drawRaw = price;
@@ -148,7 +152,7 @@ export async function GET(
       homeRaw: Math.round(homeRaw * 100),
       awayRaw: Math.round(awayRaw * 100),
       drawRaw: Math.round(drawRaw * 100),
-      volume: Math.round(totalVolume),
+      volume: Math.round(eventVolume || marketVolumeSum),
       lastUpdated: new Date().toISOString(),
       available: true,
     };

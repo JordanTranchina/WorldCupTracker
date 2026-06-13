@@ -76,7 +76,10 @@ export default function OddsDisplay({
     <div className="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-white font-semibold text-lg">Live Win Probability</h3>
+        <div>
+          <h3 className="text-white font-semibold text-lg">Win Probability</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Updates live during the match · normalized to 100%</p>
+        </div>
         <a
           href={`https://polymarket.com/sports/world-cup/games`}
           target="_blank"
