@@ -17,6 +17,15 @@ function formatTime(datetimeCT: string): string {
   return `${hour}:${min} ${ampm} CT`;
 }
 
+function getTodayDateStr(): string {
+  const now = new Date();
+  // Convert to Central Time (UTC-5, ignoring DST for simplicity since matches use fixed CT)
+  const ctOffset = -5 * 60;
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+  const ctDate = new Date(utcMs + ctOffset * 60 * 1000);
+  return `${ctDate.getFullYear()}-${String(ctDate.getMonth() + 1).padStart(2, '0')}-${String(ctDate.getDate()).padStart(2, '0')}`;
+}
+
 function getMatchStatus(match: Match): { label: string; color: string } {
   if (match.completed) {
     return { label: 'Final', color: 'text-slate-400' };
@@ -29,9 +38,13 @@ function getMatchStatus(match: Match): { label: string; color: string } {
   if (diffHours < 0 && diffHours > -3) {
     return { label: '🔴 LIVE', color: 'text-red-400 animate-pulse' };
   }
-  if (diffHours >= 0 && diffHours <= 24) {
+
+  const todayStr = getTodayDateStr();
+  const matchDayStr = match.datetimeCT.slice(0, 10);
+  if (matchDayStr === todayStr) {
     return { label: 'TODAY', color: 'text-emerald-400 font-bold' };
   }
+
   return { label: 'Upcoming', color: 'text-slate-400' };
 }
 
