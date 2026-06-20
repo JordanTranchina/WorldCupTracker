@@ -70,7 +70,10 @@ export default function OddsDisplay({
     );
   }
 
-  const { homeWinPct, awayWinPct } = odds;
+  const { homeWinPct, drawPct, awayWinPct } = odds;
+
+  // Whether a segment is wide enough to show its label inline
+  const showInline = (pct: number) => pct >= 15;
 
   return (
     <div className="rounded-2xl bg-slate-800/50 border border-slate-700 p-6 space-y-4">
@@ -78,10 +81,10 @@ export default function OddsDisplay({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-white font-semibold text-lg">Win Probability</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Updates live during the match · normalized to 100%</p>
+          <p className="text-xs text-slate-500 mt-0.5">Live · updates every 30s · all three outcomes sum to 100%</p>
         </div>
         <a
-          href={`https://polymarket.com/sports/world-cup/games`}
+          href="https://polymarket.com/sports/world-cup/games"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
@@ -91,56 +94,63 @@ export default function OddsDisplay({
         </a>
       </div>
 
-      {/* Odds bar */}
-      <div className="relative">
+      {/* 3-segment odds bar */}
+      <div>
         <div className="flex h-12 rounded-xl overflow-hidden shadow-lg">
+          {/* Home win */}
           <div
-            className="flex items-center justify-center font-bold text-white text-lg transition-all duration-700"
+            className="flex items-center justify-center font-bold text-white text-base transition-all duration-700"
             style={{ width: `${homeWinPct}%`, backgroundColor: homeColor }}
           >
-            {homeWinPct >= 20 && `${homeWinPct}%`}
+            {showInline(homeWinPct) && `${homeWinPct}%`}
           </div>
+          {/* Draw */}
+          {drawPct > 0 && (
+            <div
+              className="flex items-center justify-center font-bold text-white text-base transition-all duration-700"
+              style={{ width: `${drawPct}%`, backgroundColor: '#475569' }}
+            >
+              {showInline(drawPct) && `${drawPct}%`}
+            </div>
+          )}
+          {/* Away win */}
           <div
-            className="flex items-center justify-center font-bold text-white text-lg transition-all duration-700"
+            className="flex items-center justify-center font-bold text-white text-base transition-all duration-700"
             style={{ width: `${awayWinPct}%`, backgroundColor: awayColor }}
           >
-            {awayWinPct >= 20 && `${awayWinPct}%`}
+            {showInline(awayWinPct) && `${awayWinPct}%`}
           </div>
         </div>
-        {/* Small percentages if one side is too narrow */}
-        {(homeWinPct < 20 || awayWinPct < 20) && (
-          <div className="flex justify-between mt-2 text-sm font-semibold">
-            <span style={{ color: homeColor }}>{homeWinPct}%</span>
-            <span style={{ color: awayColor }}>{awayWinPct}%</span>
-          </div>
-        )}
-      </div>
 
-      {/* Team labels */}
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{homeFlag}</span>
-          <div>
-            <div className="font-semibold text-white">{homeTeam}</div>
-            <div className="text-slate-400">{homeWinPct}% chance</div>
+        {/* Labels row — always shown beneath the bar */}
+        <div className="flex items-start justify-between mt-3 text-sm">
+          {/* Home */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xl flex-shrink-0">{homeFlag}</span>
+            <div className="min-w-0">
+              <div className="font-semibold text-white truncate">{homeTeam}</div>
+              <div className="font-bold" style={{ color: homeColor }}>{homeWinPct}%</div>
+            </div>
           </div>
-        </div>
-        <div className="text-slate-500 font-light text-xs">vs</div>
-        <div className="flex items-center gap-2 text-right">
-          <div>
-            <div className="font-semibold text-white">{awayTeam}</div>
-            <div className="text-slate-400">{awayWinPct}% chance</div>
+
+          {/* Draw */}
+          {drawPct > 0 && (
+            <div className="flex flex-col items-center flex-shrink-0 px-2">
+              <div className="text-xs text-slate-400 font-medium">Draw</div>
+              <div className="font-bold text-slate-300">{drawPct}%</div>
+            </div>
+          )}
+
+          {/* Away */}
+          <div className="flex items-center gap-2 min-w-0 text-right">
+            <div className="min-w-0">
+              <div className="font-semibold text-white truncate">{awayTeam}</div>
+              <div className="font-bold" style={{ color: awayColor }}>{awayWinPct}%</div>
+            </div>
+            <span className="text-xl flex-shrink-0">{awayFlag}</span>
           </div>
-          <span className="text-lg">{awayFlag}</span>
         </div>
       </div>
-
-      {/* Draw probability note */}
-      {odds.drawPct > 0 && (
-        <div className="text-center text-xs text-slate-500">
-          Draw probability: {odds.drawPct}% · Win % normalized to 100%
-        </div>
-      )}
 
       {/* Volume & refresh */}
       <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-700">

@@ -137,18 +137,19 @@ export async function GET(
       }
     }
 
-    const total = homeRaw + awayRaw;
-    if (total === 0) {
+    const totalRaw = homeRaw + drawRaw + awayRaw;
+    if (totalRaw === 0) {
       return NextResponse.json({ available: false }, { status: 200 });
     }
 
-    const homeWinPct = Math.round((homeRaw / total) * 100);
-    const awayWinPct = 100 - homeWinPct;
+    const homeWinPct = Math.round((homeRaw / totalRaw) * 100);
+    const drawPct = Math.round((drawRaw / totalRaw) * 100);
+    const awayWinPct = 100 - homeWinPct - drawPct;
 
     const response: OddsResponse = {
       homeWinPct,
       awayWinPct,
-      drawPct: Math.round(drawRaw * 100),
+      drawPct,
       homeRaw: Math.round(homeRaw * 100),
       awayRaw: Math.round(awayRaw * 100),
       drawRaw: Math.round(drawRaw * 100),
