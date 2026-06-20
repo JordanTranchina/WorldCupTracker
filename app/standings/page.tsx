@@ -1,5 +1,15 @@
-import { getGroupStandings, type TeamStanding, type ClinchStatus } from '@/lib/groups';
+import { computeGroupStandings, GROUP_TEAMS, FIFA_RANKINGS, type TeamStanding, type ClinchStatus } from '@/lib/groups';
+import { fetchWorldCupMatches, mergeWithStaticMatches } from '@/lib/worldcup-api';
+import { STATIC_MATCHES } from '@/lib/matches';
 import PageNav from '@/components/PageNav';
+import type { Metadata } from 'next';
+
+export const revalidate = 300; // Revalidate every 5 minutes
+
+export const metadata: Metadata = {
+  title: 'World Cup 2026 Group Standings & Clinches',
+  description: 'View live group tables, points, goal difference, and mathematically calculated clinch statuses for all 48 teams.',
+};
 
 function ClinchBadge({ status }: { status: ClinchStatus }) {
   if (!status) return <span className="text-slate-700 text-xs">—</span>;
@@ -12,10 +22,6 @@ function ClinchBadge({ status }: { status: ClinchStatus }) {
     second: {
       label: '2nd',
       className: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    },
-    third: {
-      label: '3rd',
-      className: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
     },
     eliminated: {
       label: 'Out',
@@ -50,7 +56,7 @@ function GroupTable({ letter, standings }: { letter: string; standings: TeamStan
       {/* Column headers */}
       <div
         className="grid items-center px-4 py-2 border-b border-slate-800/80"
-        style={{ gridTemplateColumns: '1fr 2rem 2rem 2rem 2.5rem 2.5rem 3rem' }}
+        style={{ gridTemplateColumns: '1fr 2rem 2rem 2rem 2.5rem 2.5rem 3.5rem' }}
       >
         <div className="text-xs text-slate-500 uppercase tracking-wider">Team</div>
         <div className="text-xs text-slate-500 uppercase tracking-wider text-center">W</div>
@@ -71,15 +77,23 @@ function GroupTable({ letter, standings }: { letter: string; standings: TeamStan
               idx < standings.length - 1 ? 'border-b border-slate-800/50' : ''
             }`}
             style={{
-              gridTemplateColumns: '1fr 2rem 2rem 2rem 2.5rem 2.5rem 3rem',
-              background: inTop2 ? 'rgba(16,185,129,0.04)' : undefined,
+              gridTemplateColumns: '1fr 2rem 2rem 2rem 2.5rem 2.5rem 3.5rem',
+              background: team.clinched === 'first'
+                ? 'rgba(234, 179, 8, 0.12)' // Gold background for 1st place clinched
+                : team.clinched === 'second'
+                ? 'rgba(16, 185, 129, 0.12)' // Green background for advanced clinched
+                : inTop2
+                ? 'rgba(16, 185, 129, 0.04)' // Subtle green highlight for current top 2
+                : undefined,
             }}
           >
             {/* Team name + flag */}
             <div className="flex items-center gap-2 min-w-0 pr-2">
               <span className="text-xs text-slate-600 font-mono w-3 flex-shrink-0">{idx + 1}</span>
               <span className="text-lg leading-none flex-shrink-0">{team.flag}</span>
-              <span className="text-sm font-medium text-white truncate">{team.name}</span>
+              <span className="text-sm font-medium text-white truncate">
+                {team.name} <span className="text-xs text-slate-400 font-normal">({FIFA_RANKINGS[team.code] || '—'})</span>
+              </span>
               {team.played > 0 && (
                 <span className="text-xs text-slate-600 flex-shrink-0">({team.played})</span>
               )}
@@ -98,8 +112,23 @@ function GroupTable({ letter, standings }: { letter: string; standings: TeamStan
   );
 }
 
-export default function StandingsPage() {
-  const allStandings = getGroupStandings();
+export default async function StandingsPage() {
+  // Fetch live data from openfootball API
+  let apiMatches = await fetchWorldCupMatches();
+
+  // Merge with static data to preserve accurate venue/time info for featured matches
+  if (apiMatches.length > 0) {
+    apiMatches = mergeWithStaticMatches(apiMatches, STATIC_MATCHES);
+  }
+
+  // Use API data if available, fallback to static
+  const matchData = apiMatches.length > 0 ? apiMatches : STATIC_MATCHES;
+
+  // Compute standings for all groups
+  const allStandings: Record<string, TeamStanding[]> = {};
+  for (const groupLetter of Object.keys(GROUP_TEAMS)) {
+    allStandings[groupLetter] = computeGroupStandings(groupLetter, matchData);
+  }
   const groups = Object.keys(allStandings).sort();
 
   return (
@@ -156,10 +185,6 @@ export default function StandingsPage() {
             <div className="flex items-center gap-2">
               <ClinchBadge status="second" />
               <span>Clinched 2nd / advanced</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ClinchBadge status="third" />
-              <span>Clinched 3rd (best 3rd eligible)</span>
             </div>
             <div className="flex items-center gap-2">
               <ClinchBadge status="eliminated" />

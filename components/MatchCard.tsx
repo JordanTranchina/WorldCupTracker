@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Match } from '@/lib/matches';
+import { FIFA_RANKINGS } from '@/lib/groups';
 
 interface Props {
   match: Match;
@@ -52,14 +53,23 @@ export default function MatchCard({ match }: Props) {
   const time = formatTime(match.datetimeCT);
   const status = getMatchStatus(match);
 
+  const homeRank = FIFA_RANKINGS[match.homeCode];
+  const awayRank = FIFA_RANKINGS[match.awayCode];
+  const isHotMatch = homeRank && awayRank && Math.abs(homeRank - awayRank) <= 10;
+
   return (
     <Link href={`/match/${match.slug}`} className="block group">
       <div className="bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 rounded-2xl p-4 transition-all duration-200 cursor-pointer">
         {/* Group badge + status */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-semibold text-slate-400 bg-slate-700 px-2 py-0.5 rounded-full">
-            Group {match.group}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-400 bg-slate-700 px-2 py-0.5 rounded-full">
+              Group {match.group}
+            </span>
+            {isHotMatch && (
+              <span className="text-sm" title="FIFA rankings difference within 10">🔥</span>
+            )}
+          </div>
           <span className={`text-xs ${status.color}`}>{status.label}</span>
         </div>
 
@@ -70,7 +80,7 @@ export default function MatchCard({ match }: Props) {
             <span className="text-2xl flex-shrink-0">{match.homeFlag}</span>
             <div className="min-w-0">
               <div className="font-semibold text-white text-sm truncate">
-                {match.homeTeam}
+                {match.homeTeam} <span className="text-xs text-slate-400 font-normal">({FIFA_RANKINGS[match.homeCode] || '—'})</span>
               </div>
             </div>
           </div>
@@ -91,7 +101,7 @@ export default function MatchCard({ match }: Props) {
           <div className="flex-1 flex items-center gap-2 justify-end min-w-0">
             <div className="min-w-0 text-right">
               <div className="font-semibold text-white text-sm truncate">
-                {match.awayTeam}
+                {match.awayTeam} <span className="text-xs text-slate-400 font-normal">({FIFA_RANKINGS[match.awayCode] || '—'})</span>
               </div>
             </div>
             <span className="text-2xl flex-shrink-0">{match.awayFlag}</span>

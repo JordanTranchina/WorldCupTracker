@@ -1,13 +1,37 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getMatchBySlug } from '@/lib/matches';
+import type { Metadata } from 'next';
 import { LINEUPS, type LineupPlayer } from '@/lib/lineups';
 import type { Position } from '@/lib/squads';
 import OddsDisplay from '@/components/OddsDisplay';
-import { TEAM_COLORS } from '@/lib/matches';
+import { TEAM_COLORS, STATIC_MATCHES } from '@/lib/matches';
+import { fetchWorldCupMatches, mergeWithStaticMatches } from '@/lib/worldcup-api';
+import { FIFA_RANKINGS } from '@/lib/groups';
+
+export const revalidate = 300; // Revalidate every 5 minutes
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  let apiMatches = await fetchWorldCupMatches();
+  if (apiMatches.length > 0) {
+    apiMatches = mergeWithStaticMatches(apiMatches, STATIC_MATCHES);
+  }
+  const matches = apiMatches.length > 0 ? apiMatches : STATIC_MATCHES;
+  const match = matches.find((m) => m.slug === slug);
+
+  if (!match) {
+    return {
+      title: 'Match Not Found | World Cup 2026',
+    };
+  }
+
+  return {
+    title: `${match.homeTeam} vs ${match.awayTeam} | World Cup 2026`,
+  };
 }
 
 function formatMatchTime(datetimeCT: string): string {
@@ -56,7 +80,14 @@ function groupByPosition(players: LineupPlayer[]): Partial<Record<Position, Line
 
 export default async function MatchPage({ params }: Props) {
   const { slug } = await params;
-  const match = getMatchBySlug(slug);
+
+  // Fetch live matches
+  let apiMatches = await fetchWorldCupMatches();
+  if (apiMatches.length > 0) {
+    apiMatches = mergeWithStaticMatches(apiMatches, STATIC_MATCHES);
+  }
+  const matches = apiMatches.length > 0 ? apiMatches : STATIC_MATCHES;
+  const match = matches.find((m) => m.slug === slug);
 
   if (!match) notFound();
 
@@ -64,6 +95,10 @@ export default async function MatchPage({ params }: Props) {
 
   const homeColor = TEAM_COLORS[match.homeCode] || '#6b7280';
   const awayColor = TEAM_COLORS[match.awayCode] || '#6b7280';
+
+  const homeRank = FIFA_RANKINGS[match.homeCode];
+  const awayRank = FIFA_RANKINGS[match.awayCode];
+  const isHotMatch = homeRank && awayRank && Math.abs(homeRank - awayRank) <= 10;
 
   return (
     <main className="min-h-screen" style={{ background: '#0f172a' }}>
@@ -82,9 +117,14 @@ export default async function MatchPage({ params }: Props) {
         <div className="rounded-2xl border border-slate-700 p-6" style={{ background: '#1e293b' }}>
           {/* Group & date */}
           <div className="flex items-center justify-between mb-5">
-            <span className="text-xs font-semibold text-slate-400 bg-slate-700/60 px-2.5 py-1 rounded-full">
-              Group {match.group}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400 bg-slate-700/60 px-2.5 py-1 rounded-full">
+                Group {match.group}
+              </span>
+              {isHotMatch && (
+                <span className="text-sm" title="FIFA rankings difference within 10">🔥</span>
+              )}
+            </div>
             <span className="text-xs text-slate-500">{formatMatchDate(match.datetimeCT)}</span>
           </div>
 
@@ -94,7 +134,9 @@ export default async function MatchPage({ params }: Props) {
             <div className="flex-1 flex flex-col items-center gap-2">
               <span className="text-5xl">{match.homeFlag}</span>
               <div className="text-center">
-                <div className="font-bold text-white text-lg">{match.homeTeam}</div>
+                <div className="font-bold text-white text-lg">
+                  {match.homeTeam} <span className="text-sm text-slate-400 font-normal">({FIFA_RANKINGS[match.homeCode] || '—'})</span>
+                </div>
                 {match.completed && (
                   <div className="text-4xl font-black text-white mt-1">{match.homeScore}</div>
                 )}
@@ -122,7 +164,9 @@ export default async function MatchPage({ params }: Props) {
             <div className="flex-1 flex flex-col items-center gap-2">
               <span className="text-5xl">{match.awayFlag}</span>
               <div className="text-center">
-                <div className="font-bold text-white text-lg">{match.awayTeam}</div>
+                <div className="font-bold text-white text-lg">
+                  {match.awayTeam} <span className="text-sm text-slate-400 font-normal">({FIFA_RANKINGS[match.awayCode] || '—'})</span>
+                </div>
                 {match.completed && (
                   <div className="text-4xl font-black text-white mt-1">{match.awayScore}</div>
                 )}
