@@ -1,6 +1,4 @@
 import { computeGroupStandings, GROUP_TEAMS, FIFA_RANKINGS, type TeamStanding, type ClinchStatus } from '@/lib/groups';
-import { fetchWorldCupMatches, mergeWithStaticMatches } from '@/lib/worldcup-api';
-import { STATIC_MATCHES } from '@/lib/matches';
 import PageNav from '@/components/PageNav';
 import type { Metadata } from 'next';
 
@@ -79,11 +77,11 @@ function GroupTable({ letter, standings }: { letter: string; standings: TeamStan
             style={{
               gridTemplateColumns: '1fr 2rem 2rem 2rem 2.5rem 2.5rem 3.5rem',
               background: team.clinched === 'first'
-                ? 'rgba(234, 179, 8, 0.12)' // Gold background for 1st place clinched
+                ? 'rgba(234, 179, 8, 0.12)'
                 : team.clinched === 'second'
-                ? 'rgba(16, 185, 129, 0.12)' // Green background for advanced clinched
+                ? 'rgba(16, 185, 129, 0.12)'
                 : inTop2
-                ? 'rgba(16, 185, 129, 0.04)' // Subtle green highlight for current top 2
+                ? 'rgba(16, 185, 129, 0.04)'
                 : undefined,
             }}
           >
@@ -112,22 +110,10 @@ function GroupTable({ letter, standings }: { letter: string; standings: TeamStan
   );
 }
 
-export default async function StandingsPage() {
-  // Fetch live data from openfootball API
-  let apiMatches = await fetchWorldCupMatches();
-
-  // Merge with static data to preserve accurate venue/time info for featured matches
-  if (apiMatches.length > 0) {
-    apiMatches = mergeWithStaticMatches(apiMatches, STATIC_MATCHES);
-  }
-
-  // Use API data if available, fallback to static
-  const matchData = apiMatches.length > 0 ? apiMatches : STATIC_MATCHES;
-
-  // Compute standings for all groups
+export default function StandingsPage() {
   const allStandings: Record<string, TeamStanding[]> = {};
   for (const groupLetter of Object.keys(GROUP_TEAMS)) {
-    allStandings[groupLetter] = computeGroupStandings(groupLetter, matchData);
+    allStandings[groupLetter] = computeGroupStandings(groupLetter);
   }
   const groups = Object.keys(allStandings).sort();
 
@@ -188,7 +174,7 @@ export default async function StandingsPage() {
             </div>
             <div className="flex items-center gap-2">
               <ClinchBadge status="eliminated" />
-              <span>Mathematically eliminated</span>
+              <span>Cannot finish top 2</span>
             </div>
           </div>
         </div>

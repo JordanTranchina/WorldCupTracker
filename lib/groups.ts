@@ -1,5 +1,3 @@
-import type { Match } from './matches';
-
 export interface GroupTeam {
   code: string;
   name: string;
@@ -157,7 +155,7 @@ export const FIFA_RANKINGS: Record<string, number> = {
   tur: 22, ecu: 23, aut: 24, kor: 25, aus: 27, alg: 28, egy: 29, can: 30, nor: 31,
   civ: 33, pan: 34, swe: 38, cze: 40, par: 41, sco: 42, tun: 45, cod: 46, uzb: 50,
   qat: 56, irq: 57, rsa: 60, ksa: 61, jor: 63, bih: 64, cvi: 67, gha: 73, cur: 82,
-  hai: 83, nzl: 85
+  hai: 83, nzl: 85,
 };
 
 export type ClinchStatus = 'first' | 'second' | 'eliminated' | undefined;
@@ -177,257 +175,264 @@ export interface TeamStanding {
   clinched: ClinchStatus;
 }
 
-interface MinimalMatch {
+interface GroupMatchData {
+  group: string;
   homeCode: string;
   awayCode: string;
+  completed: boolean;
   homeScore?: number;
   awayScore?: number;
-  completed: boolean;
 }
 
-function resolveTie(tiedTeams: TeamStanding[], groupMatches: MinimalMatch[]): TeamStanding[] {
-  const codes = tiedTeams.map(t => t.code);
-  
-  const h2hStats: Record<string, { points: number; gd: number; gf: number }> = {};
-  for (const code of codes) {
-    h2hStats[code] = { points: 0, gd: 0, gf: 0 };
+// All 72 group-stage matches. Update `completed`/scores as matches finish.
+const GROUP_MATCHES: GroupMatchData[] = [
+  // ── Group A ──────────────────────────────────────────
+  { group: 'A', homeCode: 'mex', awayCode: 'rsa', completed: true,  homeScore: 2, awayScore: 0 },
+  { group: 'A', homeCode: 'kor', awayCode: 'cze', completed: true,  homeScore: 2, awayScore: 1 },
+  { group: 'A', homeCode: 'cze', awayCode: 'rsa', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'A', homeCode: 'mex', awayCode: 'kor', completed: true,  homeScore: 1, awayScore: 0 },
+  { group: 'A', homeCode: 'mex', awayCode: 'cze', completed: false },
+  { group: 'A', homeCode: 'kor', awayCode: 'rsa', completed: false },
+
+  // ── Group B ──────────────────────────────────────────
+  { group: 'B', homeCode: 'can', awayCode: 'bih', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'B', homeCode: 'qat', awayCode: 'sui', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'B', homeCode: 'sui', awayCode: 'bih', completed: true,  homeScore: 4, awayScore: 1 },
+  { group: 'B', homeCode: 'can', awayCode: 'qat', completed: true,  homeScore: 6, awayScore: 0 },
+  { group: 'B', homeCode: 'can', awayCode: 'sui', completed: false },
+  { group: 'B', homeCode: 'bih', awayCode: 'qat', completed: false },
+
+  // ── Group C ──────────────────────────────────────────
+  { group: 'C', homeCode: 'bra', awayCode: 'mar', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'C', homeCode: 'sco', awayCode: 'hai', completed: true,  homeScore: 1, awayScore: 0 },
+  { group: 'C', homeCode: 'mar', awayCode: 'sco', completed: true,  homeScore: 1, awayScore: 0 },
+  { group: 'C', homeCode: 'bra', awayCode: 'hai', completed: true,  homeScore: 3, awayScore: 0 },
+  { group: 'C', homeCode: 'bra', awayCode: 'sco', completed: false },
+  { group: 'C', homeCode: 'mar', awayCode: 'hai', completed: false },
+
+  // ── Group D ──────────────────────────────────────────
+  { group: 'D', homeCode: 'usa', awayCode: 'par', completed: true,  homeScore: 4, awayScore: 1 },
+  { group: 'D', homeCode: 'aus', awayCode: 'tur', completed: true,  homeScore: 2, awayScore: 0 },
+  { group: 'D', homeCode: 'usa', awayCode: 'aus', completed: true,  homeScore: 2, awayScore: 0 },
+  { group: 'D', homeCode: 'par', awayCode: 'tur', completed: true,  homeScore: 1, awayScore: 0 },
+  { group: 'D', homeCode: 'usa', awayCode: 'tur', completed: false },
+  { group: 'D', homeCode: 'aus', awayCode: 'par', completed: false },
+
+  // ── Group E ──────────────────────────────────────────
+  { group: 'E', homeCode: 'ger', awayCode: 'cur', completed: true,  homeScore: 7, awayScore: 1 },
+  { group: 'E', homeCode: 'civ', awayCode: 'ecu', completed: true,  homeScore: 1, awayScore: 0 },
+  { group: 'E', homeCode: 'ger', awayCode: 'civ', completed: false },
+  { group: 'E', homeCode: 'ecu', awayCode: 'cur', completed: false },
+  { group: 'E', homeCode: 'ger', awayCode: 'ecu', completed: false },
+  { group: 'E', homeCode: 'civ', awayCode: 'cur', completed: false },
+
+  // ── Group F ──────────────────────────────────────────
+  { group: 'F', homeCode: 'ned', awayCode: 'jpn', completed: true,  homeScore: 2, awayScore: 2 },
+  { group: 'F', homeCode: 'swe', awayCode: 'tun', completed: true,  homeScore: 5, awayScore: 1 },
+  { group: 'F', homeCode: 'swe', awayCode: 'jpn', completed: false },
+  { group: 'F', homeCode: 'ned', awayCode: 'tun', completed: false },
+  { group: 'F', homeCode: 'swe', awayCode: 'ned', completed: false },
+  { group: 'F', homeCode: 'jpn', awayCode: 'tun', completed: false },
+
+  // ── Group G ──────────────────────────────────────────
+  { group: 'G', homeCode: 'bel', awayCode: 'egy', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'G', homeCode: 'irn', awayCode: 'nzl', completed: true,  homeScore: 2, awayScore: 2 },
+  { group: 'G', homeCode: 'bel', awayCode: 'irn', completed: false },
+  { group: 'G', homeCode: 'egy', awayCode: 'nzl', completed: false },
+  { group: 'G', homeCode: 'bel', awayCode: 'nzl', completed: false },
+  { group: 'G', homeCode: 'irn', awayCode: 'egy', completed: false },
+
+  // ── Group H ──────────────────────────────────────────
+  { group: 'H', homeCode: 'esp', awayCode: 'cvi', completed: true,  homeScore: 0, awayScore: 0 },
+  { group: 'H', homeCode: 'ksa', awayCode: 'ury', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'H', homeCode: 'esp', awayCode: 'ksa', completed: false },
+  { group: 'H', homeCode: 'ury', awayCode: 'cvi', completed: false },
+  { group: 'H', homeCode: 'ury', awayCode: 'esp', completed: false },
+  { group: 'H', homeCode: 'ksa', awayCode: 'cvi', completed: false },
+
+  // ── Group I ──────────────────────────────────────────
+  { group: 'I', homeCode: 'fra', awayCode: 'sen', completed: true,  homeScore: 3, awayScore: 1 },
+  { group: 'I', homeCode: 'nor', awayCode: 'irq', completed: true,  homeScore: 4, awayScore: 1 },
+  { group: 'I', homeCode: 'fra', awayCode: 'nor', completed: false },
+  { group: 'I', homeCode: 'sen', awayCode: 'irq', completed: false },
+  { group: 'I', homeCode: 'fra', awayCode: 'irq', completed: false },
+  { group: 'I', homeCode: 'sen', awayCode: 'nor', completed: false },
+
+  // ── Group J ──────────────────────────────────────────
+  { group: 'J', homeCode: 'arg', awayCode: 'alg', completed: true,  homeScore: 3, awayScore: 0 },
+  { group: 'J', homeCode: 'aut', awayCode: 'jor', completed: true,  homeScore: 3, awayScore: 1 },
+  { group: 'J', homeCode: 'arg', awayCode: 'aut', completed: false },
+  { group: 'J', homeCode: 'alg', awayCode: 'jor', completed: false },
+  { group: 'J', homeCode: 'arg', awayCode: 'jor', completed: false },
+  { group: 'J', homeCode: 'alg', awayCode: 'aut', completed: false },
+
+  // ── Group K ──────────────────────────────────────────
+  { group: 'K', homeCode: 'por', awayCode: 'cod', completed: true,  homeScore: 1, awayScore: 1 },
+  { group: 'K', homeCode: 'col', awayCode: 'uzb', completed: true,  homeScore: 3, awayScore: 1 },
+  { group: 'K', homeCode: 'col', awayCode: 'por', completed: false },
+  { group: 'K', homeCode: 'cod', awayCode: 'uzb', completed: false },
+  { group: 'K', homeCode: 'por', awayCode: 'uzb', completed: false },
+  { group: 'K', homeCode: 'cod', awayCode: 'col', completed: false },
+
+  // ── Group L ──────────────────────────────────────────
+  { group: 'L', homeCode: 'eng', awayCode: 'cro', completed: true,  homeScore: 4, awayScore: 2 },
+  { group: 'L', homeCode: 'gha', awayCode: 'pan', completed: true,  homeScore: 1, awayScore: 0 },
+  { group: 'L', homeCode: 'eng', awayCode: 'gha', completed: false },
+  { group: 'L', homeCode: 'cro', awayCode: 'pan', completed: false },
+  { group: 'L', homeCode: 'eng', awayCode: 'pan', completed: false },
+  { group: 'L', homeCode: 'cro', awayCode: 'gha', completed: false },
+];
+
+function applyMatchToStats(
+  stats: Record<string, TeamStanding>,
+  m: GroupMatchData,
+): void {
+  const home = stats[m.homeCode];
+  const away = stats[m.awayCode];
+  if (!home || !away || !m.completed || m.homeScore === undefined || m.awayScore === undefined) return;
+
+  home.played++;
+  away.played++;
+  home.goalsFor += m.homeScore;
+  home.goalsAgainst += m.awayScore;
+  away.goalsFor += m.awayScore;
+  away.goalsAgainst += m.homeScore;
+
+  if (m.homeScore > m.awayScore) {
+    home.won++; home.points += 3; away.lost++;
+  } else if (m.homeScore < m.awayScore) {
+    away.won++; away.points += 3; home.lost++;
+  } else {
+    home.drawn++; away.drawn++; home.points += 1; away.points += 1;
   }
+}
 
-  const h2hMatches = groupMatches.filter(
-    m => m.completed && codes.includes(m.homeCode) && codes.includes(m.awayCode)
-  );
+function h2hSort(tiedTeams: TeamStanding[], matchList: GroupMatchData[]): TeamStanding[] {
+  const codes = new Set(tiedTeams.map(t => t.code));
+  const h2h: Record<string, { pts: number; gd: number; gf: number }> = {};
+  for (const t of tiedTeams) h2h[t.code] = { pts: 0, gd: 0, gf: 0 };
 
-  for (const m of h2hMatches) {
-    const home = h2hStats[m.homeCode];
-    const away = h2hStats[m.awayCode];
-    if (!home || !away || m.homeScore === undefined || m.awayScore === undefined) continue;
-
-    home.gf += m.homeScore;
-    home.gd += (m.homeScore - m.awayScore);
-    away.gf += m.awayScore;
-    away.gd += (m.awayScore - m.homeScore);
-
-    if (m.homeScore > m.awayScore) {
-      home.points += 3;
-    } else if (m.homeScore < m.awayScore) {
-      away.points += 3;
-    } else {
-      home.points += 1;
-      away.points += 1;
-    }
+  for (const m of matchList) {
+    if (!m.completed || m.homeScore === undefined || m.awayScore === undefined) continue;
+    if (!codes.has(m.homeCode) || !codes.has(m.awayCode)) continue;
+    h2h[m.homeCode].gf += m.homeScore;
+    h2h[m.homeCode].gd += m.homeScore - m.awayScore;
+    h2h[m.awayCode].gf += m.awayScore;
+    h2h[m.awayCode].gd += m.awayScore - m.homeScore;
+    if (m.homeScore > m.awayScore) h2h[m.homeCode].pts += 3;
+    else if (m.homeScore < m.awayScore) h2h[m.awayCode].pts += 3;
+    else { h2h[m.homeCode].pts += 1; h2h[m.awayCode].pts += 1; }
   }
 
   return [...tiedTeams].sort((a, b) => {
-    const h2hPtsDiff = h2hStats[b.code].points - h2hStats[a.code].points;
-    if (h2hPtsDiff !== 0) return h2hPtsDiff;
-
-    const h2hGdDiff = h2hStats[b.code].gd - h2hStats[a.code].gd;
-    if (h2hGdDiff !== 0) return h2hGdDiff;
-
-    const h2hGfDiff = h2hStats[b.code].gf - h2hStats[a.code].gf;
-    if (h2hGfDiff !== 0) return h2hGfDiff;
-
-    const gdDiff = b.goalDifference - a.goalDifference;
+    const ptsDiff = h2h[b.code].pts - h2h[a.code].pts;
+    if (ptsDiff !== 0) return ptsDiff;
+    const gdDiff = h2h[b.code].gd - h2h[a.code].gd;
     if (gdDiff !== 0) return gdDiff;
-
-    const gfDiff = b.goalsFor - a.goalsFor;
+    const gfDiff = h2h[b.code].gf - h2h[a.code].gf;
     if (gfDiff !== 0) return gfDiff;
-
-    return a.name.localeCompare(b.name);
+    const overallGdDiff = b.goalDifference - a.goalDifference;
+    if (overallGdDiff !== 0) return overallGdDiff;
+    return b.goalsFor - a.goalsFor;
   });
 }
 
-function sortStandings(stats: TeamStanding[], groupMatches: MinimalMatch[]): TeamStanding[] {
-  const pointsGroups: Record<number, TeamStanding[]> = {};
-  for (const team of stats) {
-    const pts = team.points;
-    if (!pointsGroups[pts]) pointsGroups[pts] = [];
-    pointsGroups[pts].push(team);
+function sortStandings(teams: TeamStanding[], matchList: GroupMatchData[]): TeamStanding[] {
+  const byPoints: Record<number, TeamStanding[]> = {};
+  for (const t of teams) {
+    (byPoints[t.points] ??= []).push(t);
   }
-
-  const sortedPoints = Object.keys(pointsGroups)
-    .map(Number)
-    .sort((a, b) => b - a);
-
-  const finalStandings: TeamStanding[] = [];
-
-  for (const pts of sortedPoints) {
-    const tiedTeams = pointsGroups[pts];
-    if (tiedTeams.length === 1) {
-      finalStandings.push(tiedTeams[0]);
-    } else {
-      const resolved = resolveTie(tiedTeams, groupMatches);
-      finalStandings.push(...resolved);
-    }
+  const result: TeamStanding[] = [];
+  for (const pts of Object.keys(byPoints).map(Number).sort((a, b) => b - a)) {
+    const group = byPoints[pts];
+    result.push(...(group.length === 1 ? group : h2hSort(group, matchList)));
   }
-
-  return finalStandings;
+  return result;
 }
 
-export function computeGroupStandings(groupLetter: string, matches: Match[]): TeamStanding[] {
+function makeBlankStats(teams: GroupTeam[]): Record<string, TeamStanding> {
+  const stats: Record<string, TeamStanding> = {};
+  for (const t of teams) {
+    stats[t.code] = {
+      code: t.code, name: t.name, flag: t.flag,
+      played: 0, won: 0, drawn: 0, lost: 0,
+      goalsFor: 0, goalsAgainst: 0, goalDifference: 0,
+      points: 0, clinched: undefined,
+    };
+  }
+  return stats;
+}
+
+export function computeGroupStandings(groupLetter: string): TeamStanding[] {
   const teams = GROUP_TEAMS[groupLetter];
   if (!teams) return [];
 
-  const stats: Record<string, TeamStanding> = {};
-  for (const team of teams) {
-    stats[team.code] = {
-      code: team.code,
-      name: team.name,
-      flag: team.flag,
-      played: 0,
-      won: 0,
-      drawn: 0,
-      lost: 0,
-      goalsFor: 0,
-      goalsAgainst: 0,
-      goalDifference: 0,
-      points: 0,
-      clinched: undefined,
-    };
-  }
+  const allGroupMatches = GROUP_MATCHES.filter(m => m.group === groupLetter);
+  const completedMatches = allGroupMatches.filter(
+    m => m.completed && m.homeScore !== undefined && m.awayScore !== undefined,
+  );
+  const remainingMatches = allGroupMatches.filter(m => !m.completed);
 
-  const groupMatches = matches.filter(m => m.group === groupLetter);
-
-  for (const match of groupMatches) {
-    if (!match.completed || match.homeScore === undefined || match.awayScore === undefined) continue;
-    const home = stats[match.homeCode];
-    const away = stats[match.awayCode];
-    if (!home || !away) continue;
-
-    home.played++;
-    away.played++;
-    home.goalsFor += match.homeScore;
-    home.goalsAgainst += match.awayScore;
-    away.goalsFor += match.awayScore;
-    away.goalsAgainst += match.homeScore;
-
-    if (match.homeScore > match.awayScore) {
-      home.won++;
-      home.points += 3;
-      away.lost++;
-    } else if (match.homeScore < match.awayScore) {
-      away.won++;
-      away.points += 3;
-      home.lost++;
-    } else {
-      home.drawn++;
-      away.drawn++;
-      home.points += 1;
-      away.points += 1;
-    }
-  }
-
+  // Build current standings
+  const stats = makeBlankStats(teams);
+  for (const m of completedMatches) applyMatchToStats(stats, m);
   for (const code in stats) {
     stats[code].goalDifference = stats[code].goalsFor - stats[code].goalsAgainst;
   }
 
-  const standings = sortStandings(Object.values(stats), groupMatches);
+  const current = sortStandings(Object.values(stats), completedMatches);
 
-  if (!standings.some(t => t.played > 0)) return standings;
+  if (!current.some(t => t.played > 0)) return current;
 
-  if (standings.every(t => t.played === 3)) {
+  // All games done — assign final positions
+  if (remainingMatches.length === 0) {
     const positions: ClinchStatus[] = ['first', 'second', undefined, 'eliminated'];
-    return standings.map((team, idx) => ({ ...team, clinched: positions[idx] }));
+    return current.map((t, i) => ({ ...t, clinched: positions[i] }));
   }
 
-  // Clinch detection based on points math simulation with H2H tiebreakers
-  const completedMatches = groupMatches.filter(m => m.completed && m.homeScore !== undefined && m.awayScore !== undefined);
-  const remainingMatches = groupMatches.filter(m => !m.completed);
-
-  const outcomes: MinimalMatch[][] = [];
-  
-  function recurse(idx: number, current: any[]) {
-    if (idx === remainingMatches.length) {
-      outcomes.push([...current]);
-      return;
+  // Simulate all W/D/L outcomes for remaining matches (3^n scenarios)
+  const outcomes: GroupMatchData[][] = [[]];
+  for (const m of remainingMatches) {
+    const next: GroupMatchData[][] = [];
+    for (const scenario of outcomes) {
+      next.push([...scenario, { ...m, completed: true, homeScore: 1, awayScore: 0 }]);
+      next.push([...scenario, { ...m, completed: true, homeScore: 0, awayScore: 0 }]);
+      next.push([...scenario, { ...m, completed: true, homeScore: 0, awayScore: 1 }]);
     }
-    const match = remainingMatches[idx];
-    recurse(idx + 1, [...current, { ...match, homeScore: 1, awayScore: 0, completed: true }]);
-    recurse(idx + 1, [...current, { ...match, homeScore: 0, awayScore: 0, completed: true }]);
-    recurse(idx + 1, [...current, { ...match, homeScore: 0, awayScore: 1, completed: true }]);
-  }
-  
-  recurse(0, completedMatches);
-
-  const teamRanks: Record<string, number[]> = {};
-  for (const team of teams) {
-    teamRanks[team.code] = [];
+    outcomes.length = 0;
+    outcomes.push(...next);
   }
 
-  for (const scenario of outcomes) {
-    const statsForScenario: Record<string, TeamStanding> = {};
-    for (const team of teams) {
-      statsForScenario[team.code] = {
-        code: team.code,
-        name: team.name,
-        flag: team.flag,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        goalDifference: 0,
-        points: 0,
-        clinched: undefined,
-      };
-    }
-    
-    for (const match of scenario) {
-      const home = statsForScenario[match.homeCode];
-      const away = statsForScenario[match.awayCode];
-      if (!home || !away || match.homeScore === undefined || match.awayScore === undefined) continue;
+  // For each team track the range of final positions across all scenarios
+  const bestPos: Record<string, number> = {};
+  const worstPos: Record<string, number> = {};
+  for (const t of teams) { bestPos[t.code] = 4; worstPos[t.code] = 1; }
 
-      home.played++;
-      away.played++;
-      home.goalsFor += match.homeScore;
-      home.goalsAgainst += match.awayScore;
-      away.goalsFor += match.awayScore;
-      away.goalsAgainst += match.homeScore;
-
-      if (match.homeScore > match.awayScore) {
-        home.won++;
-        home.points += 3;
-        away.lost++;
-      } else if (match.homeScore < match.awayScore) {
-        away.won++;
-        away.points += 3;
-        home.lost++;
-      } else {
-        home.drawn++;
-        away.drawn++;
-        home.points += 1;
-        away.points += 1;
-      }
-    }
-    
-    for (const code in statsForScenario) {
-      statsForScenario[code].goalDifference = statsForScenario[code].goalsFor - statsForScenario[code].goalsAgainst;
-    }
-    
-    const sortedScenario = sortStandings(Object.values(statsForScenario), scenario);
-    
-    sortedScenario.forEach((team, rankIdx) => {
-      teamRanks[team.code].push(rankIdx + 1);
+  for (const simRemaining of outcomes) {
+    const s = makeBlankStats(teams);
+    for (const m of [...completedMatches, ...simRemaining]) applyMatchToStats(s, m);
+    for (const code in s) s[code].goalDifference = s[code].goalsFor - s[code].goalsAgainst;
+    const sorted = sortStandings(Object.values(s), [...completedMatches, ...simRemaining]);
+    sorted.forEach((t, i) => {
+      const rank = i + 1;
+      if (rank < bestPos[t.code]) bestPos[t.code] = rank;
+      if (rank > worstPos[t.code]) worstPos[t.code] = rank;
     });
   }
 
-  return standings.map(team => {
-    const ranks = teamRanks[team.code];
-    if (!ranks || ranks.length === 0) return team;
-
-    const minBest = Math.min(...ranks);
-    const maxWorst = Math.max(...ranks);
-
+  return current.map(t => {
     let clinched: ClinchStatus = undefined;
-    if (maxWorst === 1) {
-      clinched = 'first';
-    } else if (maxWorst <= 2) {
-      clinched = 'second';
-    } else if (minBest >= 3) {
-      clinched = 'eliminated';
-    }
-
-    return { ...team, clinched };
+    if (worstPos[t.code] === 1) clinched = 'first';
+    else if (worstPos[t.code] <= 2) clinched = 'second';
+    else if (bestPos[t.code] >= 3) clinched = 'eliminated';
+    return { ...t, clinched };
   });
+}
+
+export function getGroupStandings(): Record<string, TeamStanding[]> {
+  const result: Record<string, TeamStanding[]> = {};
+  for (const letter of Object.keys(GROUP_TEAMS)) {
+    result[letter] = computeGroupStandings(letter);
+  }
+  return result;
 }
