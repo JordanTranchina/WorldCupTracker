@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMatchBySlug } from '@/lib/matches';
-import { getSquad, type Position } from '@/lib/squads';
+import { LINEUPS, type LineupPlayer } from '@/lib/lineups';
+import type { Position } from '@/lib/squads';
 import OddsDisplay from '@/components/OddsDisplay';
 import { TEAM_COLORS } from '@/lib/matches';
 
@@ -44,14 +45,22 @@ const POSITION_COLORS: Record<Position, string> = {
   FWD: '#ef4444',
 };
 
+function groupByPosition(players: LineupPlayer[]): Partial<Record<Position, LineupPlayer[]>> {
+  const groups: Partial<Record<Position, LineupPlayer[]>> = {};
+  for (const p of players) {
+    if (!groups[p.position]) groups[p.position] = [];
+    groups[p.position]!.push(p);
+  }
+  return groups;
+}
+
 export default async function MatchPage({ params }: Props) {
   const { slug } = await params;
   const match = getMatchBySlug(slug);
 
   if (!match) notFound();
 
-  const homeSquad = getSquad(match.homeCode);
-  const awaySquad = getSquad(match.awayCode);
+  const lineup = LINEUPS[match.slug];
 
   const homeColor = TEAM_COLORS[match.homeCode] || '#6b7280';
   const awayColor = TEAM_COLORS[match.awayCode] || '#6b7280';
@@ -149,90 +158,43 @@ export default async function MatchPage({ params }: Props) {
         )}
       </div>
 
-      {/* Rosters */}
-      {(homeSquad || awaySquad) && (
+      {/* Lineups */}
+      {lineup && (
         <div className="max-w-2xl mx-auto px-4 pb-12">
-          <h2 className="text-base font-semibold text-slate-300 mb-4">Squads</h2>
+          <h2 className="text-base font-semibold text-slate-300 mb-4">Lineups</h2>
           <div className="grid grid-cols-2 gap-4">
-            {/* Home squad */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">{match.homeFlag}</span>
-                <span className="font-semibold text-white text-sm">{match.homeTeam}</span>
-              </div>
-              {homeSquad ? (
-                <div className="space-y-4">
-                  {POSITION_ORDER.map((pos) => {
-                    const players = homeSquad.players.filter((p) => p.position === pos);
-                    if (players.length === 0) return null;
-                    return (
-                      <div key={pos}>
-                        <div
-                          className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"
-                          style={{ color: POSITION_COLORS[pos] }}
-                        >
-                          <span
-                            className="inline-block w-1.5 h-1.5 rounded-full"
-                            style={{ background: POSITION_COLORS[pos] }}
-                          />
-                          {POSITION_LABELS[pos]}
-                        </div>
-                        <div className="space-y-1.5">
-                          {players.map((p) => (
-                            <div
-                              key={p.name}
-                              className="rounded-lg px-3 py-2"
-                              style={{ background: '#1e293b' }}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-mono text-slate-500 w-5 text-right flex-shrink-0">
-                                  {p.number}
-                                </span>
-                                <div className="min-w-0">
-                                  <div className="text-sm font-medium text-white truncate">{p.name}</div>
-                                  <div className="text-xs text-slate-500 truncate">{p.club}</div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+            {[
+              { flag: match.homeFlag, team: match.homeTeam, side: lineup.home },
+              { flag: match.awayFlag, team: match.awayTeam, side: lineup.away },
+            ].map(({ flag, team, side }) => (
+              <div key={team}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xl">{flag}</span>
+                  <span className="font-semibold text-white text-sm">{team}</span>
                 </div>
-              ) : (
-                <div className="text-sm text-slate-500">Squad not available</div>
-              )}
-            </div>
 
-            {/* Away squad */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">{match.awayFlag}</span>
-                <span className="font-semibold text-white text-sm">{match.awayTeam}</span>
-              </div>
-              {awaySquad ? (
-                <div className="space-y-4">
+                {/* Starting XI */}
+                <div className="mb-4">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Starting XI
+                  </div>
                   {POSITION_ORDER.map((pos) => {
-                    const players = awaySquad.players.filter((p) => p.position === pos);
+                    const players = (groupByPosition(side.starters)[pos] ?? []);
                     if (players.length === 0) return null;
                     return (
-                      <div key={pos}>
+                      <div key={pos} className="mb-2">
                         <div
-                          className="text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"
+                          className="text-xs font-semibold uppercase tracking-wider mb-1 pl-1"
                           style={{ color: POSITION_COLORS[pos] }}
                         >
-                          <span
-                            className="inline-block w-1.5 h-1.5 rounded-full"
-                            style={{ background: POSITION_COLORS[pos] }}
-                          />
                           {POSITION_LABELS[pos]}
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           {players.map((p) => (
                             <div
                               key={p.name}
-                              className="rounded-lg px-3 py-2"
+                              className="rounded-lg px-3 py-1.5"
                               style={{ background: '#1e293b' }}
                             >
                               <div className="flex items-center gap-2">
@@ -251,10 +213,51 @@ export default async function MatchPage({ params }: Props) {
                     );
                   })}
                 </div>
-              ) : (
-                <div className="text-sm text-slate-500">Squad not available</div>
-              )}
-            </div>
+
+                {/* Substitutes */}
+                {side.subs.length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-500" />
+                      Substitutes
+                    </div>
+                    {POSITION_ORDER.map((pos) => {
+                      const players = (groupByPosition(side.subs)[pos] ?? []);
+                      if (players.length === 0) return null;
+                      return (
+                        <div key={pos} className="mb-2">
+                          <div
+                            className="text-xs font-semibold uppercase tracking-wider mb-1 pl-1"
+                            style={{ color: POSITION_COLORS[pos], opacity: 0.7 }}
+                          >
+                            {POSITION_LABELS[pos]}
+                          </div>
+                          <div className="space-y-1">
+                            {players.map((p) => (
+                              <div
+                                key={p.name}
+                                className="rounded-lg px-3 py-1.5"
+                                style={{ background: '#172033' }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-mono text-slate-600 w-5 text-right flex-shrink-0">
+                                    {p.number}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <div className="text-sm text-slate-400 truncate">{p.name}</div>
+                                    <div className="text-xs text-slate-600 truncate">{p.club}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
