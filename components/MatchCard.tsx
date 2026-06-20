@@ -59,11 +59,6 @@ export default function MatchCard({ match }: Props) {
               <div className="font-semibold text-white text-sm truncate">
                 {match.homeTeam}
               </div>
-              {match.completed && (
-                <div className="text-2xl font-bold text-white">
-                  {match.homeScore}
-                </div>
-              )}
             </div>
           </div>
 
@@ -85,11 +80,6 @@ export default function MatchCard({ match }: Props) {
               <div className="font-semibold text-white text-sm truncate">
                 {match.awayTeam}
               </div>
-              {match.completed && (
-                <div className="text-2xl font-bold text-white">
-                  {match.awayScore}
-                </div>
-              )}
             </div>
             <span className="text-2xl flex-shrink-0">{match.awayFlag}</span>
           </div>

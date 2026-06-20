@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import MatchCard from '@/components/MatchCard';
+import PageNav from '@/components/PageNav';
 import { MATCHES, groupMatchesByDay, type FeaturedTeam } from '@/lib/matches';
 
 const TEAMS: { code: FeaturedTeam | 'all'; label: string; flag: string }[] = [
@@ -67,8 +68,10 @@ export default function HomePage() {
             </div>
           </div>
 
+          <PageNav />
+
           {/* Team filter tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1 mt-3">
             {TEAMS.map((t) => (
               <button
                 key={t.code}
