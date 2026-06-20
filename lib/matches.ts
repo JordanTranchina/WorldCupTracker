@@ -18,7 +18,12 @@ export interface Match {
   featuredTeams: FeaturedTeam[];
 }
 
-export const MATCHES: Match[] = [
+/**
+ * Static match data for the 4 featured teams.
+ * These have accurate slugs, venues, and times that match lineups and Polymarket odds.
+ * Scores may be stale — the API fetch will update them.
+ */
+export const STATIC_MATCHES: Match[] = [
   {
     slug: 'fifwc-usa-par-2026-06-12',
     homeTeam: 'USA',
@@ -46,7 +51,9 @@ export const MATCHES: Match[] = [
     datetimeCT: '2026-06-13T17:00:00',
     group: 'C',
     venue: 'MetLife Stadium, East Rutherford, NJ',
-    completed: false,
+    completed: true,
+    homeScore: 1,
+    awayScore: 1,
     featuredTeams: ['bra'],
   },
   {
@@ -60,7 +67,9 @@ export const MATCHES: Match[] = [
     datetimeCT: '2026-06-15T11:00:00',
     group: 'H',
     venue: 'Mercedes-Benz Stadium, Atlanta, GA',
-    completed: false,
+    completed: true,
+    homeScore: 0,
+    awayScore: 0,
     featuredTeams: ['esp'],
   },
   {
@@ -74,7 +83,9 @@ export const MATCHES: Match[] = [
     datetimeCT: '2026-06-17T15:00:00',
     group: 'L',
     venue: 'AT&T Stadium, Arlington, TX',
-    completed: false,
+    completed: true,
+    homeScore: 4,
+    awayScore: 2,
     featuredTeams: ['eng'],
   },
   {
@@ -88,7 +99,9 @@ export const MATCHES: Match[] = [
     datetimeCT: '2026-06-19T14:00:00',
     group: 'D',
     venue: 'Lumen Field, Seattle, WA',
-    completed: false,
+    completed: true,
+    homeScore: 2,
+    awayScore: 0,
     featuredTeams: ['usa'],
   },
   {
@@ -102,7 +115,9 @@ export const MATCHES: Match[] = [
     datetimeCT: '2026-06-19T20:00:00',
     group: 'C',
     venue: "Lincoln Financial Field, Philadelphia, PA",
-    completed: false,
+    completed: true,
+    homeScore: 3,
+    awayScore: 0,
     featuredTeams: ['bra'],
   },
   {
@@ -191,6 +206,9 @@ export const MATCHES: Match[] = [
   },
 ];
 
+/** Keep backward compat — MATCHES is the static set for client components that import it directly */
+export const MATCHES = STATIC_MATCHES;
+
 export function getMatchBySlug(slug: string): Match | undefined {
   return MATCHES.find((m) => m.slug === slug);
 }
@@ -206,6 +224,7 @@ export function groupMatchesByDay(matches: Match[]): Record<string, Match[]> {
 }
 
 export const TEAM_COLORS: Record<string, string> = {
+  // Original featured teams
   usa: '#3B82F6',
   bra: '#22C55E',
   eng: '#1E3A5F',
@@ -222,4 +241,37 @@ export const TEAM_COLORS: Record<string, string> = {
   hai: '#1D4ED8',
   sco: '#1E3A8A',
   mar: '#CC1326',
+  // New teams
+  mex: '#006847',
+  rsa: '#007749',
+  kor: '#C60C30',
+  cze: '#11457E',
+  can: '#FF0000',
+  bih: '#002395',
+  qat: '#8A1538',
+  sui: '#FF0000',
+  ger: '#000000',
+  cur: '#002B7F',
+  civ: '#FF8200',
+  ecu: '#FFD100',
+  ned: '#FF6600',
+  jpn: '#000080',
+  swe: '#006AA7',
+  tun: '#E70013',
+  bel: '#ED2939',
+  egy: '#C8102E',
+  irn: '#239F40',
+  nzl: '#000000',
+  fra: '#002395',
+  sen: '#00853F',
+  irq: '#007A3D',
+  nor: '#BA0C2F',
+  arg: '#75AADB',
+  alg: '#006233',
+  aut: '#ED2939',
+  jor: '#007A33',
+  por: '#006600',
+  cod: '#007FFF',
+  uzb: '#1EB53A',
+  col: '#FCD116',
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { OddsResponse } from '@/app/api/odds/[slug]/route';
+import { FIFA_RANKINGS } from '@/lib/groups';
 
 interface Props {
   slug: string;
@@ -18,8 +19,10 @@ interface Props {
 export default function OddsDisplay({
   slug,
   homeTeam,
+  homeCode,
   homeFlag,
   awayTeam,
+  awayCode,
   awayFlag,
   homeColor,
   awayColor,
@@ -84,7 +87,7 @@ export default function OddsDisplay({
           <p className="text-xs text-slate-500 mt-0.5">Live · updates every 30s · all three outcomes sum to 100%</p>
         </div>
         <a
-          href="https://polymarket.com/sports/world-cup/games"
+          href={`https://polymarket.com/event/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
@@ -128,7 +131,9 @@ export default function OddsDisplay({
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xl flex-shrink-0">{homeFlag}</span>
             <div className="min-w-0">
-              <div className="font-semibold text-white truncate">{homeTeam}</div>
+              <div className="font-semibold text-white truncate">
+                {homeTeam} <span className="text-xs text-slate-400 font-normal">({FIFA_RANKINGS[homeCode] || '—'})</span>
+              </div>
               <div className="font-bold" style={{ color: homeColor }}>{homeWinPct}%</div>
             </div>
           </div>
@@ -143,8 +148,10 @@ export default function OddsDisplay({
 
           {/* Away */}
           <div className="flex items-center gap-2 min-w-0 text-right">
-            <div className="min-w-0">
-              <div className="font-semibold text-white truncate">{awayTeam}</div>
+            <div className="min-w-0 text-right">
+              <div className="font-semibold text-white truncate">
+                {awayTeam} <span className="text-xs text-slate-400 font-normal">({FIFA_RANKINGS[awayCode] || '—'})</span>
+              </div>
               <div className="font-bold" style={{ color: awayColor }}>{awayWinPct}%</div>
             </div>
             <span className="text-xl flex-shrink-0">{awayFlag}</span>
