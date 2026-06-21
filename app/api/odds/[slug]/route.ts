@@ -97,7 +97,17 @@ export async function GET(
         (homeCode === 'tur' && q.includes('türkiye')) ||
         (homeCode === 'sco' && q.includes('scotland')) ||
         (homeCode === 'ury' && q.includes('uruguay')) ||
-        (homeCode === 'pan' && q.includes('panama'))
+        (homeCode === 'pan' && q.includes('panama')) ||
+        (homeCode === 'nzl' && q.includes('new zealand')) ||
+        (homeCode === 'aus' && q.includes('australia')) ||
+        (homeCode === 'cro' && q.includes('croatia')) ||
+        (homeCode === 'gha' && q.includes('ghana')) ||
+        (homeCode === 'par' && q.includes('paraguay')) ||
+        (homeCode === 'ksa' && q.includes('saudi')) ||
+        (homeCode === 'hai' && q.includes('haiti')) ||
+        (homeCode === 'cvi' && q.includes('cabo verde')) ||
+        (homeCode === 'cvi' && q.includes('cape verde')) ||
+        (homeCode === 'mar' && q.includes('morocco'))
       ) {
         homeRaw = price;
       } else if (
@@ -112,6 +122,7 @@ export async function GET(
         (awayCode === 'sco' && q.includes('scotland')) ||
         (awayCode === 'ury' && q.includes('uruguay')) ||
         (awayCode === 'pan' && q.includes('panama')) ||
+        (awayCode === 'nzl' && q.includes('new zealand')) ||
         (awayCode === 'aus' && q.includes('australia')) ||
         (awayCode === 'cro' && q.includes('croatia')) ||
         (awayCode === 'gha' && q.includes('ghana')) ||
